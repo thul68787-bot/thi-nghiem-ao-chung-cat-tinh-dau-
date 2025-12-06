@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng thí nghiệm Ảo: Chưng cất Tinh dầu Sả</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 0 auto; padding: 20px; max-width: 1000px; color: #333; display: flex; gap: 20px; }
+        #controls, #results { padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        #controls { flex: 1; background-color: #e9ecef; }
+        #results { flex: 2; background-color: #fff; }
+        .control-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        select, input[type="range"], button { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        .result-box { margin-top: 15px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9; }
+
+        /* CSS cho mô phỏng bình phân tách */
+        .separator-flask {
+            width: 100px;
+            height: 200px;
+            border: 2px solid #333;
+            border-radius: 0 0 40px 40px;
+            position: relative;
+            overflow: hidden;
+            margin: 20px auto 10px auto;
+            background-color: #eaf4ff; /* Màu nước */
+        }
+
+        /* Lớp tinh dầu sẽ được JS điều chỉnh chiều cao và màu sắc */
+        .oil-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0%; /* Chiều cao ban đầu */
+            transition: height 1s ease-in-out, background-color 0.5s;
+            background-color: #FFC300; /* Màu vàng mặc định */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="controls">
+        <h2>Bảng điều khiển Thí nghiệm</h2>
+        <div class="control-group">
+            <label for="materialState">Trạng thái nguyên liệu:</label>
+            <select id="materialState">
+                <option value="fresh_small">Sả tươi, cắt nhỏ (1cm)</option>
+                <option value="fresh_whole">Sả tươi, để nguyên cành</option>
+                <option value="dry_small">Sả khô, cắt nhỏ (1cm)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="duration">Thời gian chưng cất (phút): <span id="durationValue">120</span></label>
+            <input type="range" id="duration" min="30" max="240" value="120" step="10">
+        </div>
+        <div class="control-group">
+            <label for="temperature">Nhiệt độ/Tốc độ hơi (°C): <span id="temperatureValue">100</span></label>
+            <input type="range" id="temperature" min="90" max="120" value="100" step="1">
+        </div>
+        <button onclick="runExperiment()">Bắt đầu Chưng cất</button>
+    </div>
+
+    <div id="results">
+        <h2>Khu vực Quan sát & Kết quả</h2>
+        <div id="simulationArea">
+            <p id="simulationText">Nhấn "Bắt đầu Chưng cất" để chạy thí nghiệm. Kết quả sẽ hiển thị trong bình bên dưới.</p>
+            
+            <!-- Mô phỏng bình phân tách kết quả -->
+            <div class="separator-flask">
+                <div class="oil-layer" id="oilLayer"></div>
+            </div>
+        </div>
+
+        <h3>Kết quả Thu được:</h3>
+        <div class="result-box">
+            <p><strong>Hiệu suất:</strong> <span id="yieldResult">0</span> ml (Tổng lượng chất lỏng trong bình là khoảng 15ml)</p>
+            <p><strong>Chất lượng cảm quan:</strong> <span id="qualityResult">Chưa xác định</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Cập nhật giá trị thanh trượt hiển thị số
+        document.getElementById('duration').addEventListener('input', function() {
+            document.getElementById('durationValue').textContent = this.value;
+        });
+        document.getElementById('temperature').addEventListener('input', function() {
+            document.getElementById('temperatureValue').textContent = this.value;
+        });
+
+        function runExperiment() {
+            const materialState = document.getElementById('materialState').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const temperature = parseInt(document.getElementById('temperature').value);
+            
+            document.getElementById('simulationText').textContent = `Đang tiến hành chưng cất... Vui lòng chờ kết quả.`;
+
+            // Giả lập thời gian chạy trước khi hiển thị kết quả cuối cùng
+            setTimeout(() => {
+                // --- Logic mô phỏng (Tính toán kết quả) ---
+                let yieldVal = 0; // Tính bằng % chiều cao của bình
+                let qualityMsg = "Trung bình";
+                let color = "#FFC300"; // Màu vàng nhạt mặc định
+
+                // Ảnh hưởng của các yếu tố đến hiệu suất (tính theo %)
+                if (materialState.includes('small')) yieldVal += 20; 
+                if (materialState.includes('dry')) yieldVal += 5;
+                yieldVal += (duration / 240) * 40; // Thời gian ảnh hưởng đến 40%
+
+                // Ảnh hưởng của nhiệt độ đến chất lượng và hiệu suất
+                if (temperature > 105) {
+                    qualityMsg = "Chất lượng thấp (Do quá nhiệt, màu sẫm)";
+                    color = "#8B4513"; // Màu nâu sẫm
+                    yieldVal = Math.max(5, yieldVal - 10); 
+                } else if (temperature < 95) {
+                    qualityMsg = "Chất lượng tốt (Mùi tươi mát, nhẹ)";
+                    yieldVal = Math.max(5, yieldVal - 10);
+                    color = "#FFD700";
+                } else {
+                    qualityMsg = "Chất lượng cao (Mùi sả mạnh đặc trưng, màu sáng)";
+                    yieldVal += 5;
+                    color = "#FFC300";
+                }
+                
+                // Giới hạn hiệu suất từ 0 đến 100%
+                yieldVal = Math.round(Math.max(0, Math.min(yieldVal, 100)));
+
+                // --- Hiển thị kết quả ---
+                // Cập nhật chiều cao lớp dầu (YieldVal) và màu sắc (Color)
+                document.getElementById('oilLayer').style.height = `${yieldVal}%`;
+                document.getElementById('oilLayer').style.backgroundColor = color;
+                
+                // Giả định tổng thể tích là 15ml, tính ml thực tế
+                const mlResult = (yieldVal / 100) * 15;
+
+                document.getElementById('yieldResult').textContent = mlResult.toFixed(2);
+                document.getElementById('qualityResult').textContent = qualityMsg;
+                document.getElementById('simulationText').textContent = `Thí nghiệm hoàn tất! Lượng tinh dầu thu được đã được phân tách.`;
+
+            }, 1500); 
+        }
+    </script>
+
+</body>
+</html>
